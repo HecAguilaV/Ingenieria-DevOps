@@ -8,3 +8,5 @@
 node_modules/
 target/
 ci.yml
+README.md
+index.html
