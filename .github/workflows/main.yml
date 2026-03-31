@@ -1,0 +1,47 @@
+name: "CD: Build and Push to Docker Hub"
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    name: "Build Docker Image & Push"
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: "Checkout Code"
+        uses: actions/checkout@v4
+
+      - name: "Login to Docker Hub"
+        uses: docker/login-action@v3
+        with:
+          # Recuerda configurar estos secretos en GitHub: DOCKERHUB_USERNAME y DOCKERHUB_TOKEN
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: "Set up Docker Buildx"
+        uses: docker/setup-buildx-action@v3
+
+      - name: "Extract Metadata"
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/devops-aws-frontend
+          tags: |
+            type=raw,value=latest
+            type=sha,value={{sha}}
+
+      - name: "Build and Push Image"
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          # Usamos caché de GitHub para que los builds sean instantáneos
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: "Build Summary"
+        run: echo "🚀 Imagen enviada a Docker Hub como ${{ secrets.DOCKERHUB_USERNAME }}/devops-aws-frontend:latest"
